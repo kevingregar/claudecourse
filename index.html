@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,21 +31,21 @@
 </head>
 <body>
 <div id="root"></div>
- 
+
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
- 
+
 // ── ⚠️  CONFIGURATION — fill these in ──────────────────────────────────────
 // 1. Go to supabase.com → your project → Settings → API
 // 2. Copy "Project URL" and "anon public" key into the two constants below.
 // 3. In Authentication → URL Configuration, set Site URL to wherever this
 //    file is hosted (e.g. http://localhost:8080 or your production domain).
 // ────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
- 
+const SUPABASE_URL  = 'https://vtnuyytqqmegowbaevly.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bnV5eXRxcW1lZ293YmFldmx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMjU1NzksImV4cCI6MjA5NTgwMTU3OX0._-EdaKndB5o1Gd2iVB2nxKdOQoMpeYWQYNHSmUYmgVU';
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
- 
+
 // ── Curriculum Data ──────────────────────────────────────────────────────────
 const sections = [
   {
@@ -157,7 +156,7 @@ const sections = [
     ]
   }
 ];
- 
+
 // ── Socratic Prompts (one per module) ───────────────────────────────────────
 // Each prompt is injected into claude.ai/new?q=... so the learner's own
 // Claude account runs the conversation at no cost to the course.
@@ -167,85 +166,85 @@ const socratics = {
 2. Navigate the Claude interface and start a productive conversation
 3. Apply basic prompting etiquette: clarity, context, and specificity
 4. Recognize when Claude is the right tool versus another resource
- 
+
 Do not lecture me or explain these topics upfront. Instead, start by asking me what I already think the difference is between Claude and a search engine — in my own words. Listen to my answer, probe any gaps or assumptions, and use follow-up questions to guide me toward a solid understanding of each objective. If I get something wrong, ask a question that helps me discover the error myself rather than just correcting me. When I have demonstrated clear understanding of all four objectives through my answers, tell me I am ready to go back and take the quiz.`,
- 
+
   m02: `You are a Socratic learning coach. I am working through a module called "Prompt Engineering Essentials" in an AI literacy course for working professionals. My learning objectives are:
 1. Construct prompts using a role-context-task-format framework
 2. Use examples within prompts to shape Claude's output style
 3. Iterate on a prompt through at least two refinement cycles
 4. Avoid common prompting mistakes: vague asks, over-constraining, missing context
- 
+
 Do not explain prompt engineering to me. Instead, start by asking me to describe how I currently write prompts when I ask an AI for help — what do I typically include, and what do I leave out? Use my answer to identify gaps, then ask targeted questions that lead me to discover each element of the framework on my own. At some point, ask me to write a real prompt for a task I actually do at work, then coach me through improving it with questions rather than rewrites. When I have demonstrated solid understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m03: `You are a Socratic learning coach. I am working through a module called "Personal Productivity with Claude" in an AI literacy course for working professionals. My learning objectives are:
 1. Use Claude to draft, edit, and summarize personal communications
 2. Build a reusable prompt template for a task I do weekly
 3. Set up a simple personal knowledge workflow using Claude
 4. Evaluate Claude's output critically and know when to push back or refine
- 
+
 Do not explain these concepts to me. Start by asking me to describe the most time-consuming repetitive task in my personal or work life right now. Use my answer to explore how I currently handle it, then ask questions that help me discover how Claude could fit into that workflow. At some point ask me: if Claude gave me a draft that was 80% right, how would I know, and what would I do next? Use my answer to probe my critical evaluation instincts. When I have demonstrated understanding of all four objectives through our conversation, tell me I am ready to take the quiz.`,
- 
+
   m04: `You are a Socratic learning coach. I am working through a module called "Claude for Your Health" in an AI literacy course for working professionals. My learning objectives are:
 1. Use Claude to research and understand health topics in plain language
 2. Prepare smarter questions before a doctor's appointment using Claude
 3. Build a personal health tracking prompt I can use weekly
 4. Understand the boundaries of Claude's health guidance and when to consult a professional
- 
+
 Do not lecture me about health and AI. Start by asking me: the last time I had a health concern, what did I do to research it and prepare for a conversation with a doctor? Use my answer to explore my current habits, then ask questions that help me discover where Claude could add value — and where it cannot. At some point, ask me directly: what do you think Claude should never do when it comes to your health, and why? Probe my thinking. When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m05: `You are a Socratic learning coach. I am working through a module called "Claude for Your Finances" in an AI literacy course for working professionals. My learning objectives are:
 1. Use Claude to explain financial concepts in plain language
 2. Build a simple personal budget analysis prompt
 3. Use Claude to compare financial options such as loans, cards, and savings accounts
 4. Recognize what Claude can and cannot do as a financial planning tool
- 
+
 Do not explain personal finance or AI to me. Start by asking me: when you last had to make a financial decision — choosing a credit card, understanding a fee, comparing options — how did you research it? Use my answer to explore my current approach, then ask questions that surface where Claude could help and where it falls short. At some point ask me: would you trust Claude to tell you whether to invest in a specific stock, and why or why not? Probe whatever I say. When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m06: `You are a Socratic learning coach. I am working through a module called "Claude for Family Vacation Planning" in an AI literacy course for working professionals. My learning objectives are:
 1. Use Claude to generate destination ideas based on my family's preferences and constraints
 2. Build a full trip itinerary using multi-turn conversation with Claude
 3. Use Claude to research and compare accommodations, activities, and logistics
 4. Create a reusable travel planning prompt template for future trips
- 
+
 Do not explain trip planning or AI to me. Start by asking me to describe the last trip I planned — or a trip I wish I had planned better. What was hard about it? What information did I wish I had earlier? Use my answers to explore my planning process, then ask questions that help me discover how a multi-turn conversation with Claude could have helped at each stage. At some point ask me: if you were going to plan a trip every year, what parts of that process could be templated so you do not start from scratch each time? When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m07: `You are a Socratic learning coach. I am working through a module called "Multi-Turn Conversations and Memory" in an AI literacy course for working professionals. My learning objectives are:
 1. Maintain context across a long conversation without losing Claude's focus
 2. Use conversation history strategically to build on prior outputs
 3. Design a briefing prompt that quickly restores context in a new session
 4. Recognize the limits of Claude's session memory and plan around them
- 
+
 Do not explain how Claude memory works. Start by asking me: have you ever had a long back-and-forth with Claude or another AI where it seemed to forget what you were talking about earlier? What happened? Use whatever I say — even if the answer is no — to explore my mental model of how Claude handles memory. Ask questions that help me discover the actual limits on my own. At some point ask me: if you closed this conversation right now and opened a new one tomorrow to continue this exact project, what would you need to tell Claude to get back up to speed? Push me to be specific. When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m08: `You are a Socratic learning coach. I am working through a module called "Building Simple Automations and Workflows" in an AI literacy course for working professionals. My learning objectives are:
 1. Describe what an AI agent is and how it differs from a single prompt
 2. Design a simple multi-step workflow using Claude as the reasoning engine
 3. Connect Claude to at least one external tool or data source
 4. Identify 2-3 personal use cases where an agent would save meaningful time
- 
+
 Do not explain agents or automation to me. Start by asking me: is there a task you do every week that feels like it should not require a human — something you do mostly on autopilot? Use my answer to explore what that task actually involves, step by step. Ask questions that help me see where a sequence of automated steps could replace manual effort. At some point ask me: what is the difference between sending Claude one big detailed prompt versus having Claude take a sequence of actions across multiple tools? Do not answer this for me — probe my thinking until I work it out. When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
- 
+
   m09: `You are a Socratic learning coach. I am working through a module called "Deploying Personal Agents" in an AI literacy course for working professionals. My learning objectives are:
 1. Build a functional personal agent that solves a real recurring problem
 2. Write a system prompt that gives the agent a persistent role and behavior
 3. Test, debug, and iterate on an agent through at least one failure cycle
 4. Articulate how personal agent-building skills translate directly to workplace efficiency gains
- 
+
 Do not explain agents or system prompts to me. Start by asking me: if you could have a personal assistant that handled one specific recurring thing in your life automatically, what would it be? Use my answer to explore what that agent would actually need to know and do. Ask questions that help me discover what a system prompt needs to contain. At some point ask me: what do you think will go wrong the first time you deploy this agent — and how would you find out? Use my answer to probe whether I understand iteration and failure cycles. Finally, ask me how the skills I am building here connect to my actual job. When I have demonstrated understanding of all four objectives, tell me I am ready to take the quiz.`,
 };
- 
+
 // Build a claude.ai URL with the prompt pre-loaded in the input box
 function claudeUrl(moduleId) {
   const prompt = socratics[moduleId];
   if (!prompt) return 'https://claude.ai/new';
   return `https://claude.ai/new?q=${encodeURIComponent(prompt)}`;
 }
- 
+
 const allModules = sections.flatMap(s =>
   s.modules.map(m => ({...m, sectionId:s.id, sectionColor:s.color, sectionBg:s.bg, sectionTitle:s.title}))
 );
- 
+
 // ── Supabase helpers ─────────────────────────────────────────────────────────
 // Table schema (run this SQL in your Supabase SQL editor):
 //
@@ -266,7 +265,7 @@ const allModules = sections.flatMap(s =>
 //     for all
 //     using  (auth.uid() = user_id)
 //     with check (auth.uid() = user_id);
- 
+
 async function fetchProgress(userId) {
   const { data, error } = await supabase
     .from('user_progress')
@@ -279,7 +278,7 @@ async function fetchProgress(userId) {
   });
   return map;
 }
- 
+
 async function upsertModuleProgress(userId, moduleId, state) {
   const { error } = await supabase
     .from('user_progress')
@@ -292,7 +291,7 @@ async function upsertModuleProgress(userId, moduleId, state) {
     }, { onConflict: 'user_id,module_id' });
   if (error) throw error;
 }
- 
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({ name, size=16, color='currentColor' }) => {
   const icons = {
@@ -309,14 +308,14 @@ const Icon = ({ name, size=16, color='currentColor' }) => {
   };
   return icons[name] || null;
 };
- 
+
 // ── Login Screen ─────────────────────────────────────────────────────────────
 function LoginScreen() {
   const [email,   setEmail]   = useState('');
   const [sent,    setSent]    = useState(false);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.includes('@') || !email.includes('.')) {
@@ -337,7 +336,7 @@ function LoginScreen() {
       setSent(true);
     }
   };
- 
+
   return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#09090f',padding:'24px'}}>
       <div style={{width:'100%',maxWidth:'420px'}} className="fade-in">
@@ -348,7 +347,7 @@ function LoginScreen() {
           <h1 style={{fontSize:'1.6rem',fontWeight:800,color:'#e2e0ef',letterSpacing:'-0.5px'}}>From Zero to AI Agent Builder</h1>
           <p style={{color:'#a09cb8',marginTop:8,fontSize:'0.9rem'}}>Sign in to track your progress across all 9 modules</p>
         </div>
- 
+
         {!sent ? (
           <form onSubmit={handleSubmit} style={{background:'#111118',border:'1px solid #2a2a38',borderRadius:16,padding:28}}>
             <label style={{display:'block',fontSize:'0.8rem',fontWeight:600,color:'#a09cb8',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>
@@ -399,13 +398,13 @@ function LoginScreen() {
     </div>
   );
 }
- 
+
 // ── Quiz Component ────────────────────────────────────────────────────────────
 function Quiz({ module, onComplete, existing }) {
   const [answers,   setAnswers]   = useState(existing?.answers   || {});
   const [submitted, setSubmitted] = useState(existing?.submitted || false);
   const [score,     setScore]     = useState(existing?.score     || 0);
- 
+
   const handleSubmit = () => {
     let correct = 0;
     module.quiz.forEach((q, i) => { if (answers[i] === q.a) correct++; });
@@ -414,17 +413,17 @@ function Quiz({ module, onComplete, existing }) {
     setSubmitted(true);
     onComplete({ answers, submitted: true, score: s, correct, total: module.quiz.length });
   };
- 
+
   const allAnswered = module.quiz.every((_, i) => answers[i] !== undefined);
   const passed = score >= 80;
- 
+
   return (
     <div style={{background:'#0d0d14',borderRadius:12,padding:'20px',marginTop:16}}>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
         <Icon name="award" size={16} color="#f59e0b" />
         <span style={{fontWeight:700,fontSize:'0.85rem',color:'#f59e0b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Check on Learning</span>
       </div>
- 
+
       {module.quiz.map((q, qi) => (
         <div key={qi} style={{marginBottom:20}}>
           <p style={{fontSize:'0.88rem',color:'#d4d0e8',fontWeight:600,marginBottom:10,lineHeight:1.5}}>{qi+1}. {q.q}</p>
@@ -452,7 +451,7 @@ function Quiz({ module, onComplete, existing }) {
           })}
         </div>
       ))}
- 
+
       {!submitted ? (
         <button onClick={handleSubmit} disabled={!allAnswered}
           style={{background:allAnswered?'linear-gradient(135deg,#d97706,#f59e0b)':'#2a2a38',color:allAnswered?'white':'#6b6880',border:'none',borderRadius:8,padding:'11px 20px',fontWeight:700,fontSize:'0.85rem',cursor:allAnswered?'pointer':'not-allowed',width:'100%',marginTop:4,transition:'background 0.2s'}}>
@@ -467,7 +466,7 @@ function Quiz({ module, onComplete, existing }) {
               : `You scored ${score}%. Review the objectives and try again.`}
           </div>
           {!passed && (
-            <button onClick={()=>{setAnswers({});setSubmitted(false);setScore(0);}}
+            <button onClick={()=>{setAnswers({});setSubmitted(false);setScore(0);onComplete(null);}}
               style={{marginTop:10,background:'transparent',border:'1px solid #dc2626',borderRadius:6,padding:'6px 14px',color:'#f87171',fontSize:'0.78rem',cursor:'pointer'}}>
               Retry Quiz
             </button>
@@ -477,24 +476,24 @@ function Quiz({ module, onComplete, existing }) {
     </div>
   );
 }
- 
+
 // ── Module Card ───────────────────────────────────────────────────────────────
 function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
   const [open, setOpen] = useState(false);
- 
+
   const checkedObjs = state.objectives || {};
   const objCount    = Object.values(checkedObjs).filter(Boolean).length;
   const objTotal    = module.objectives.length;
   const quizDone    = state.quiz?.submitted;
   const quizPassed  = (state.quiz?.score ?? 0) >= 80;
   const complete    = objCount === objTotal && quizDone && quizPassed;
- 
+
   const toggleObj = (i) => {
     if (isLocked) return;
     const updated = {...checkedObjs, [i]: !checkedObjs[i]};
     onUpdate({...state, objectives: updated});
   };
- 
+
   return (
     <div style={{background:'#111118',border:`1px solid ${open ? module.sectionColor : '#2a2a38'}`,borderRadius:12,overflow:'hidden',transition:'border-color 0.2s',opacity:isLocked ? 0.45 : 1}}>
       {/* Header row */}
@@ -531,7 +530,7 @@ function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
           <Icon name="chevronDown" size={18} />
         </div>
       </div>
- 
+
       {/* Expanded body */}
       {open && (
         <div style={{padding:'0 16px 16px',borderTop:'1px solid #1e1e28'}} className="fade-in">
@@ -550,13 +549,13 @@ function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
               </div>
             ))}
           </div>
- 
+
           {/* Exercise */}
           <div style={{background:'#0d0d14',borderLeft:'3px solid #f59e0b',borderRadius:'0 8px 8px 0',padding:'12px 14px',marginTop:14}}>
             <p style={{fontSize:'0.7rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em',color:'#f59e0b',marginBottom:5}}>⚡ Practical Exercise</p>
             <p style={{fontSize:'0.83rem',color:'#d1d5db',lineHeight:1.55}}>{module.exercise}</p>
           </div>
- 
+
           {/* Study with Claude */}
           <a
             href={claudeUrl(module.id)}
@@ -579,7 +578,7 @@ function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
             Study this module with Claude
             <span style={{fontSize:'0.72rem',fontWeight:400,opacity:0.7,marginLeft:2}}>→ opens in your Claude account</span>
           </a>
- 
+
           {/* Quiz */}
           <Quiz
             module={module}
@@ -591,7 +590,7 @@ function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
     </div>
   );
 }
- 
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
   // Derive stats
@@ -606,10 +605,11 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
   const overallPct = Math.round(
     ((doneObjs / totalObjs) * 0.6 + (quizzesPassed / allModules.length) * 0.4) * 100
   );
- 
+
   // Per-module save state (for "saving…" indicator)
   const [savingMap, setSavingMap] = useState({});
- 
+  const [saveError, setSaveError] = useState(false);
+
   const handleUpdate = useCallback(async (moduleId, newState) => {
     // Optimistic update in parent immediately
     onProgressUpdate(moduleId, newState);
@@ -619,19 +619,20 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
       await upsertModuleProgress(user.id, moduleId, newState);
     } catch (err) {
       console.error('Failed to save progress:', err);
-      // Could surface a toast here in a future iteration
+      setSaveError(true);
+      setTimeout(() => setSaveError(false), 4000);
     } finally {
       setSavingMap(prev => ({...prev, [moduleId]: false}));
     }
   }, [user.id, onProgressUpdate]);
- 
+
   // Helper: is a module completed?
   const isModComplete = (mod) => {
     const st = progress[mod.id] || {};
     return Object.values(st.objectives||{}).filter(Boolean).length === mod.objectives.length
       && (st.quiz?.score ?? 0) >= 80;
   };
- 
+
   return (
     <div style={{maxWidth:760, margin:'0 auto', padding:'24px 16px'}}>
       {/* Header */}
@@ -650,7 +651,7 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
           <Icon name="x" size={13}/> Sign out
         </button>
       </div>
- 
+
       {/* Stats row */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:24}}>
         {[
@@ -665,7 +666,7 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
           </div>
         ))}
       </div>
- 
+
       {/* Overall progress bar */}
       <div style={{marginBottom:28}}>
         <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
@@ -676,12 +677,12 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
           <div style={{height:'100%',background:'linear-gradient(90deg,#7c3aed,#a855f7,#0891b2)',borderRadius:4,width:`${overallPct}%`,transition:'width 0.5s ease'}}/>
         </div>
       </div>
- 
+
       {/* Sections */}
       {sections.map((section, si) => {
         // Previous section is fully complete?
         const prevSectionComplete = si === 0 || sections[si-1].modules.every(isModComplete);
- 
+
         return (
           <div key={section.id} style={{marginBottom:28}}>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
@@ -702,7 +703,7 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
                 } else {
                   isLocked = !isModComplete(section.modules[mi - 1]);
                 }
- 
+
                 return (
                   <ModuleCard
                     key={mod.id}
@@ -718,7 +719,15 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
           </div>
         );
       })}
- 
+
+      {/* Save error toast */}
+      {saveError && (
+        <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',background:'#2d0a0a',border:'1px solid #dc2626',borderRadius:10,padding:'12px 20px',display:'flex',alignItems:'center',gap:8,zIndex:999,boxShadow:'0 4px 24px #0008'}} className="fade-in">
+          <Icon name="alertCircle" size={15} color="#f87171" />
+          <span style={{fontSize:'0.83rem',color:'#f87171'}}>Progress didn't save — check your connection and try again.</span>
+        </div>
+      )}
+
       {/* Completion banner */}
       {completedMods === allModules.length && (
         <div style={{background:'linear-gradient(135deg,#1a1030,#0f1a20)',border:'1px solid #7c3aed',borderRadius:16,padding:28,textAlign:'center',marginTop:8}} className="fade-in">
@@ -730,7 +739,7 @@ function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
     </div>
   );
 }
- 
+
 // ── Loading Screen ────────────────────────────────────────────────────────────
 function LoadingScreen({ message = 'Loading…' }) {
   return (
@@ -740,23 +749,23 @@ function LoadingScreen({ message = 'Loading…' }) {
     </div>
   );
 }
- 
+
 // ── App ───────────────────────────────────────────────────────────────────────
 function App() {
   const [authState, setAuthState] = useState('loading'); // 'loading' | 'unauthenticated' | 'authenticated'
   const [user,      setUser]      = useState(null);
   const [progress,  setProgress]  = useState({});
   const [loadingMsg, setLoadingMsg] = useState('Checking session…');
- 
+
   // Bootstrap: check existing session, then listen for auth changes
   useEffect(() => {
     let mounted = true;
- 
+
     const bootstrap = async () => {
       // getSession() reads from local storage / cookie set by Supabase
       const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
- 
+
       if (session?.user) {
         setUser(session.user);
         setLoadingMsg('Loading your progress…');
@@ -771,13 +780,13 @@ function App() {
         if (mounted) setAuthState('unauthenticated');
       }
     };
- 
+
     bootstrap();
- 
+
     // onAuthStateChange fires on magic-link callback, sign-out, token refresh, etc.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
- 
+
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
         setLoadingMsg('Loading your progress…');
@@ -790,7 +799,7 @@ function App() {
         }
         if (mounted) setAuthState('authenticated');
       }
- 
+
       if (event === 'SIGNED_OUT') {
         if (mounted) {
           setUser(null);
@@ -799,25 +808,25 @@ function App() {
         }
       }
     });
- 
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
- 
+
   const handleProgressUpdate = useCallback((moduleId, newState) => {
     setProgress(prev => ({...prev, [moduleId]: newState}));
   }, []);
- 
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     // onAuthStateChange will handle the state update
   };
- 
+
   if (authState === 'loading') return <LoadingScreen message={loadingMsg} />;
   if (authState === 'unauthenticated') return <LoginScreen />;
- 
+
   return (
     <Dashboard
       user={user}
@@ -827,7 +836,7 @@ function App() {
     />
   );
 }
- 
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
