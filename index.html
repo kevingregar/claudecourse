@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>From Zero to AI Agent Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #09090f; color: #e2e0ef; min-height: 100vh; }
+    :root {
+      --purple: #7c3aed; --purple-light: #a78bfa; --purple-dark: #5b21b6;
+      --cyan: #0891b2; --amber: #d97706;
+      --bg: #09090f; --bg2: #111118; --bg3: #18181f; --bg4: #1e1e28;
+      --border: #2a2a38; --border2: #333345;
+      --text: #e2e0ef; --text2: #a09cb8; --text3: #6b6880;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    input:focus { outline: 2px solid #7c3aed !important; outline-offset: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ── ⚠️  CONFIGURATION — fill these in ──────────────────────────────────────
+// 1. Go to supabase.com → your project → Settings → API
+// 2. Copy "Project URL" and "anon public" key into the two constants below.
+// 3. In Authentication → URL Configuration, set Site URL to wherever this
+//    file is hosted (e.g. http://localhost:8080 or your production domain).
+// ────────────────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://vtnuyytqqmegowbaevly.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bnV5eXRxcW1lZ293YmFldmx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMjU1NzksImV4cCI6MjA5NTgwMTU3OX0._-EdaKndB5o1Gd2iVB2nxKdOQoMpeYWQYNHSmUYmgVU';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── Curriculum Data ──────────────────────────────────────────────────────────
+const sections = [
+  {
+    id:"foundations", title:"Section 1: Foundations", color:"#7c3aed", bg:"#1a1030",
+    modules:[
+      { id:"m01", num:"01", title:"Getting Started with Claude", tag:"Foundation",
+        objectives:["Explain what Claude is and how it differs from a search engine","Navigate the Claude interface and start a productive conversation","Apply basic prompting etiquette: clarity, context, and specificity","Recognize when Claude is the right tool versus another resource"],
+        exercise:"Write a prompt asking Claude to help you plan your week. Compare your first attempt to a revised, more specific version and note the difference in output quality.",
+        quiz:[
+          {q:"What is the most important difference between Claude and a search engine?",opts:["Claude is faster than a search engine","Claude generates conversational responses and reasons through problems rather than returning links","Claude only works for professional tasks","Claude requires a subscription to use"],a:1},
+          {q:"Which of the following is an example of a clear, specific prompt?",opts:["Help me write something","Make it better","Write a 3-sentence summary of my Monday schedule for a busy professional audience","Do the thing I mentioned earlier"],a:2},
+          {q:"When is Claude NOT the best tool to use?",opts:["When you need to draft an email","When you need a real-time stock price or live sports score","When you want to brainstorm ideas","When you need help summarizing a document"],a:1},
+          {q:"What does 'context' mean when prompting Claude?",opts:["The font size of your message","The background information and purpose you give Claude so it can tailor its response","The number of words in your prompt","The device you use to access Claude"],a:1}
+        ]
+      },
+      { id:"m02", num:"02", title:"Prompt Engineering Essentials", tag:"Core Skill",
+        objectives:["Construct prompts using a role-context-task-format framework","Use examples within prompts to shape Claude's output style","Iterate on a prompt through at least two refinement cycles","Avoid common prompting mistakes: vague asks, over-constraining, missing context"],
+        exercise:"Pick one recurring personal task. Write three versions of the same prompt (basic, improved, expert-level) and evaluate the output differences.",
+        quiz:[
+          {q:"In the role-context-task-format framework, what does 'role' refer to?",opts:["Your job title","The persona or expertise you ask Claude to adopt","The length of the response","The topic of the conversation"],a:1},
+          {q:"Why is including an example in your prompt useful?",opts:["It makes the prompt longer, which always helps","It shows Claude the style, tone, or structure you want without having to describe it in detail","Examples are required for Claude to respond","It speeds up Claude's response time"],a:1},
+          {q:"Which of the following is a sign that your prompt needs refinement?",opts:["Claude asks a clarifying question","The response is too generic and doesn't match what you needed","Claude responds in less than 10 seconds","The response is longer than expected"],a:1},
+          {q:"What is 'over-constraining' in prompt engineering?",opts:["Adding too many examples","Making the prompt too long","Giving Claude so many restrictions it can't produce a useful response","Asking for more than one task at a time"],a:2},
+          {q:"What is the best approach when Claude's first response isn't quite right?",opts:["Start a completely new conversation","Accept the response as-is","Provide specific feedback in a follow-up message to guide refinement","Use a different AI tool"],a:2}
+        ]
+      },
+      { id:"m03", num:"03", title:"Personal Productivity with Claude", tag:"Applied Skills",
+        objectives:["Use Claude to draft, edit, and summarize personal communications","Build a reusable prompt template for a task you do weekly","Set up a simple personal knowledge workflow using Claude","Evaluate Claude's output critically and know when to push back or refine"],
+        exercise:"Identify your top 3 time-consuming personal tasks. Use Claude to cut the time on one of them by at least 50% this week. Document what worked.",
+        quiz:[
+          {q:"What is a prompt template?",opts:["A pre-written prompt with placeholders you fill in for recurring tasks","A saved conversation with Claude","A formatting style for Claude's responses","A list of topics Claude can help with"],a:0},
+          {q:"When Claude drafts an email and the tone feels off, what should you do?",opts:["Send it anyway since Claude is usually right","Tell Claude specifically what tone you want and ask it to revise","Rewrite it entirely yourself","Use a different tool for emails"],a:1},
+          {q:"Which is an example of a personal knowledge workflow using Claude?",opts:["Asking Claude to search the internet for news","Pasting notes from a meeting and asking Claude to extract action items and summarize decisions","Using Claude to set reminders on your phone","Asking Claude to send emails on your behalf"],a:1},
+          {q:"What does it mean to 'push back' on Claude's output?",opts:["Deleting the conversation","Telling Claude its response missed the mark and asking it to try a different approach","Pressing the back button in your browser","Rating the response with a thumbs down"],a:1}
+        ]
+      }
+    ]
+  },
+  {
+    id:"personal-life", title:"Section 2: Personal Life", color:"#0891b2", bg:"#081a20",
+    modules:[
+      { id:"m04", num:"04", title:"Claude for Your Health", tag:"Personal Life",
+        objectives:["Use Claude to research and understand health topics in plain language","Prepare smarter questions before a doctor's appointment using Claude","Build a personal health tracking prompt you can use weekly","Understand the boundaries of Claude's health guidance and when to consult a professional"],
+        exercise:"Before your next doctor's appointment (or a hypothetical one), use Claude to research your concern, then generate a list of 5 specific questions to ask your doctor. Compare the quality to questions you'd have written on your own.",
+        quiz:[
+          {q:"What is one of the most practical ways to use Claude for your health?",opts:["To get a diagnosis for a medical condition","To prepare informed questions before a doctor's appointment","To replace your doctor entirely","To order prescription medication"],a:1},
+          {q:"If Claude explains a medical term you don't understand, what's the best follow-up?",opts:["Assume Claude is wrong and ignore it","Ask Claude to explain it in simpler terms or use an analogy","Search for it on a different website","End the conversation"],a:1},
+          {q:"What should you always keep in mind when using Claude for health-related questions?",opts:["Claude's responses are always medically certified","Claude can prescribe treatments if asked correctly","Claude's guidance is informational and does not replace professional medical advice","Claude has access to your medical records"],a:2},
+          {q:"Which is a good use case for a weekly health tracking prompt?",opts:["Asking Claude to monitor your vitals automatically","Pasting in weekly notes on sleep, exercise, and mood and asking Claude to identify patterns","Having Claude remind you to take medication","Asking Claude to contact your doctor"],a:1}
+        ]
+      },
+      { id:"m05", num:"05", title:"Claude for Your Finances", tag:"Personal Life",
+        objectives:["Use Claude to explain financial concepts in plain language","Build a simple personal budget analysis prompt","Use Claude to compare financial options (loans, cards, savings accounts)","Recognize what Claude can and cannot do as a financial planning tool"],
+        exercise:"Copy your last month's spending categories (no account numbers needed) into Claude and ask it to analyze where your money went, flag any surprises, and suggest one area to optimize. Review and reflect on the output.",
+        quiz:[
+          {q:"What is a safe way to share financial information with Claude for budgeting help?",opts:["Share your bank account login credentials","Paste spending category totals without account numbers or sensitive identifiers","Upload a photo of your bank statement with account numbers visible","Share your Social Security number for identity verification"],a:1},
+          {q:"Which is Claude well-suited to help with?",opts:["Executing stock trades on your behalf","Explaining the difference between a Roth IRA and a traditional IRA in plain language","Guaranteeing investment returns","Filing your taxes automatically"],a:1},
+          {q:"What should you do before making a major financial decision based on Claude's input?",opts:["Nothing, Claude's financial advice is always accurate","Verify the information with a licensed financial advisor or trusted official source","Ask Claude the same question three times to confirm","Share the response on social media for crowdsourced validation"],a:1},
+          {q:"How can Claude help you compare two credit card offers?",opts:["By applying for both cards on your behalf","By explaining the terms of each offer and helping you build a pros-and-cons analysis based on your spending habits","By accessing your credit score automatically","By contacting the credit card companies directly"],a:1}
+        ]
+      },
+      { id:"m06", num:"06", title:"Claude for Family Vacation Planning", tag:"Personal Life",
+        objectives:["Use Claude to generate destination ideas based on your family's preferences and constraints","Build a full trip itinerary using multi-turn conversation with Claude","Use Claude to research and compare accommodations, activities, and logistics","Create a reusable travel planning prompt template for future trips"],
+        exercise:"Plan a real or hypothetical 5-day family trip using only Claude. Start with destination brainstorming, then build a day-by-day itinerary, a packing list, and a budget estimate. Time yourself — most people finish in under 20 minutes.",
+        quiz:[
+          {q:"What information should you give Claude upfront to get the best vacation suggestions?",opts:["Only the destination name","Your family size, ages, interests, budget range, travel dates, and any constraints like mobility needs","Just your budget","The names of hotels you already like"],a:1},
+          {q:"How does multi-turn conversation help with trip planning?",opts:["It allows Claude to book flights automatically","It lets you refine and expand the plan step by step, building on earlier context without starting over","It gives Claude access to live pricing data","It connects Claude to travel agencies"],a:1},
+          {q:"What is a reusable travel planning template?",opts:["A saved itinerary from a previous trip","A prompt structure with placeholder fields you fill in for any new trip","A list of Claude's favorite travel destinations","A booking confirmation email"],a:1},
+          {q:"What should you do after Claude generates a vacation itinerary?",opts:["Book everything immediately without checking","Verify key details like opening hours, prices, and availability through official sources before booking","Ask Claude to book it for you","Share it directly with your family without reviewing it"],a:1}
+        ]
+      }
+    ]
+  },
+  {
+    id:"agent-building", title:"Section 3: Agent Building", color:"#d97706", bg:"#1a1205",
+    modules:[
+      { id:"m07", num:"07", title:"Multi-Turn Conversations & Memory", tag:"Intermediate",
+        objectives:["Maintain context across a long conversation without losing Claude's focus","Use conversation history strategically to build on prior outputs","Design a briefing prompt that quickly restores context in a new session","Recognize the limits of Claude's session memory and plan around them"],
+        exercise:"Have a multi-turn conversation to plan a personal project. Then write a single 'resume prompt' that fully restores context in a brand-new session.",
+        quiz:[
+          {q:"What happens to a conversation's context when you start a new Claude session?",opts:["Claude remembers everything from previous sessions automatically","The previous context is not available unless you re-provide it","Claude downloads your history from the cloud","The context is saved for 24 hours"],a:1},
+          {q:"What is a 'briefing prompt'?",opts:["A very short prompt under 10 words","A structured summary of prior context you paste at the start of a new session to restore Claude's understanding","A prompt that asks Claude to be brief","A prompt template for business meetings"],a:1},
+          {q:"How can you keep Claude on track during a long, complex conversation?",opts:["Use shorter sentences","Periodically summarize what has been decided and restate the current goal","Start a new conversation every 10 messages","Ask Claude to remember everything at the start"],a:1},
+          {q:"What is the practical memory limit to plan around with Claude?",opts:["Claude can only remember 5 messages","Claude has no memory between separate conversation sessions","Claude forgets everything after 1 hour","Claude only remembers your name"],a:1}
+        ]
+      },
+      { id:"m08", num:"08", title:"Building Simple Automations & Workflows", tag:"Agent Foundations",
+        objectives:["Describe what an AI agent is and how it differs from a single prompt","Design a simple multi-step workflow using Claude as the reasoning engine","Connect Claude to at least one external tool or data source","Identify 2-3 personal use cases where an agent would save meaningful time"],
+        exercise:"Map out a personal workflow you want to automate. Build a simple version using Claude with one integration and run it end-to-end.",
+        quiz:[
+          {q:"What is the key difference between a prompt and an agent?",opts:["Agents are faster than prompts","An agent can take multiple steps, use tools, and act on information across a workflow rather than just generating a single response","Agents require programming experience","A prompt is used for writing, an agent is used for math"],a:1},
+          {q:"Which best describes a multi-step workflow?",opts:["Sending one very detailed prompt","A sequence of tasks where the output of one step feeds into the next","Using Claude on multiple devices","Asking Claude multiple questions in one message"],a:1},
+          {q:"Which personal use case is a strong candidate for an automated workflow?",opts:["Reading a book","Weekly review: pulling your calendar, summarizing the week, and drafting priorities for next week","Having a casual conversation","Choosing what to eat for lunch"],a:1},
+          {q:"What does it mean to 'connect Claude to an external tool'?",opts:["Plugging your computer into a different monitor","Using an integration that allows Claude to read from or write to another app like your calendar, notes, or email","Giving Claude your phone number","Opening Claude in a new browser tab"],a:1}
+        ]
+      },
+      { id:"m09", num:"09", title:"Deploying Personal Agents", tag:"Agent Building",
+        objectives:["Build a functional personal agent that solves a real recurring problem","Write a system prompt that gives the agent a persistent role and behavior","Test, debug, and iterate on an agent through at least one failure cycle","Articulate how personal agent skills translate directly to workplace efficiency gains"],
+        exercise:"Deploy your personal agent for one full week. Log what it did well, where it failed, and one improvement you made mid-week. Present your agent to a peer and explain your design choices.",
+        quiz:[
+          {q:"What is a system prompt in the context of building a personal agent?",opts:["The first message you send in a conversation","A set of instructions given to Claude before the conversation starts that define the agent's role, tone, and behavior","A computer system update","A prompt about technology topics"],a:1},
+          {q:"Why is going through a failure cycle important when building an agent?",opts:["It is not important; agents should work perfectly the first time","Failures reveal edge cases and gaps in your instructions that you can fix to make the agent more reliable","Failures mean you should use a different tool","A failure cycle is a scheduled maintenance window"],a:1},
+          {q:"Which best shows a learner has successfully completed this course?",opts:["They can describe what Claude is","They have deployed a personal agent that saves them real time each week and can explain how those skills apply at work","They have read all the module descriptions","They have used Claude at least once"],a:1},
+          {q:"How do personal agent-building skills translate to the workplace?",opts:["They do not translate; personal and work tools are completely separate","The same logic of defining roles, designing workflows, and iterating on prompts applies directly to automating repetitive work tasks","You need a separate certification to use agents at work","Workplace agents are built by IT departments only"],a:1},
+          {q:"What is the most important habit to build as you deploy your first agent?",opts:["Never changing the agent once it is deployed","Logging what works and what does not so you can systematically improve it over time","Keeping the agent secret from colleagues","Building a new agent every day"],a:1}
+        ]
+      }
+    ]
+  }
+];
+
+const allModules = sections.flatMap(s =>
+  s.modules.map(m => ({...m, sectionId:s.id, sectionColor:s.color, sectionBg:s.bg, sectionTitle:s.title}))
+);
+
+// ── Supabase helpers ─────────────────────────────────────────────────────────
+// Table schema (run this SQL in your Supabase SQL editor):
+//
+//   create table public.user_progress (
+//     id          uuid primary key default gen_random_uuid(),
+//     user_id     uuid not null references auth.users(id) on delete cascade,
+//     module_id   text not null,
+//     objectives  jsonb not null default '{}',
+//     quiz        jsonb,
+//     updated_at  timestamptz not null default now(),
+//     unique (user_id, module_id)
+//   );
+//
+//   alter table public.user_progress enable row level security;
+//
+//   create policy "Users manage own progress"
+//     on public.user_progress
+//     for all
+//     using  (auth.uid() = user_id)
+//     with check (auth.uid() = user_id);
+
+async function fetchProgress(userId) {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('module_id, objectives, quiz')
+    .eq('user_id', userId);
+  if (error) throw error;
+  const map = {};
+  (data || []).forEach(row => {
+    map[row.module_id] = { objectives: row.objectives || {}, quiz: row.quiz || null };
+  });
+  return map;
+}
+
+async function upsertModuleProgress(userId, moduleId, state) {
+  const { error } = await supabase
+    .from('user_progress')
+    .upsert({
+      user_id:    userId,
+      module_id:  moduleId,
+      objectives: state.objectives || {},
+      quiz:       state.quiz || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,module_id' });
+  if (error) throw error;
+}
+
+// ── Icons ────────────────────────────────────────────────────────────────────
+const Icon = ({ name, size=16, color='currentColor' }) => {
+  const icons = {
+    check:        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+    chevronDown:  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+    lock:         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    zap:          <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    award:        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>,
+    x:            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    mail:         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+    loader:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" className="spinner"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+    alertCircle:  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+// ── Login Screen ─────────────────────────────────────────────────────────────
+function LoginScreen() {
+  const [email,   setEmail]   = useState('');
+  const [sent,    setSent]    = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.includes('@') || !email.includes('.')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    // redirectTo must match your Supabase "Site URL" or an entry in "Redirect URLs"
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
+    });
+    setLoading(false);
+    if (authError) {
+      setError(authError.message);
+    } else {
+      setSent(true);
+    }
+  };
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#09090f',padding:'24px'}}>
+      <div style={{width:'100%',maxWidth:'420px'}} className="fade-in">
+        <div style={{textAlign:'center',marginBottom:'40px'}}>
+          <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:56,height:56,background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:16,marginBottom:16}}>
+            <Icon name="zap" size={28} color="white" />
+          </div>
+          <h1 style={{fontSize:'1.6rem',fontWeight:800,color:'#e2e0ef',letterSpacing:'-0.5px'}}>From Zero to AI Agent Builder</h1>
+          <p style={{color:'#a09cb8',marginTop:8,fontSize:'0.9rem'}}>Sign in to track your progress across all 9 modules</p>
+        </div>
+
+        {!sent ? (
+          <form onSubmit={handleSubmit} style={{background:'#111118',border:'1px solid #2a2a38',borderRadius:16,padding:28}}>
+            <label style={{display:'block',fontSize:'0.8rem',fontWeight:600,color:'#a09cb8',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>
+              Email address
+            </label>
+            <div style={{position:'relative',marginBottom:16}}>
+              <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#6b6880',pointerEvents:'none'}}>
+                <Icon name="mail" size={16} />
+              </span>
+              <input
+                type="email" value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="you@example.com"
+                disabled={loading}
+                style={{width:'100%',background:'#18181f',border:'1px solid #2a2a38',borderRadius:10,padding:'12px 12px 12px 40px',color:'#e2e0ef',fontSize:'0.95rem',outline:'none',transition:'border-color 0.15s'}}
+              />
+            </div>
+            {error && (
+              <div style={{display:'flex',alignItems:'center',gap:6,color:'#f87171',fontSize:'0.8rem',marginBottom:12}}>
+                <Icon name="alertCircle" size={14} color="#f87171" /> {error}
+              </div>
+            )}
+            <button type="submit" disabled={loading}
+              style={{width:'100%',background: loading ? '#4b2a9e' : 'linear-gradient(135deg,#7c3aed,#a855f7)',color:'white',border:'none',borderRadius:10,padding:'13px',fontSize:'0.95rem',fontWeight:700,cursor:loading?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,transition:'opacity 0.2s'}}>
+              {loading ? <><Icon name="loader" size={16} color="white" /> Sending…</> : 'Send Magic Link'}
+            </button>
+            <p style={{color:'#6b6880',fontSize:'0.75rem',textAlign:'center',marginTop:14}}>
+              No password needed. We'll send a secure sign-in link to your email.
+            </p>
+          </form>
+        ) : (
+          <div style={{background:'#111118',border:'1px solid #2a2a38',borderRadius:16,padding:28,textAlign:'center'}} className="fade-in">
+            <div style={{fontSize:'2.5rem',marginBottom:12}}>✉️</div>
+            <h3 style={{color:'#e2e0ef',fontWeight:700,marginBottom:8}}>Check your inbox</h3>
+            <p style={{color:'#a09cb8',fontSize:'0.85rem',marginBottom:20}}>
+              We sent a sign-in link to <strong style={{color:'#c084fc'}}>{email}</strong>
+            </p>
+            <p style={{color:'#6b6880',fontSize:'0.78rem',background:'#18181f',borderRadius:8,padding:'10px 14px',lineHeight:1.5}}>
+              Click the link in your email to be signed in automatically. You can close this tab.
+            </p>
+            <button onClick={()=>{setSent(false);setEmail('');}}
+              style={{marginTop:16,background:'transparent',border:'1px solid #2a2a38',borderRadius:8,padding:'8px 16px',color:'#a09cb8',fontSize:'0.8rem',cursor:'pointer'}}>
+              Use a different email
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Quiz Component ────────────────────────────────────────────────────────────
+function Quiz({ module, onComplete, existing }) {
+  const [answers,   setAnswers]   = useState(existing?.answers   || {});
+  const [submitted, setSubmitted] = useState(existing?.submitted || false);
+  const [score,     setScore]     = useState(existing?.score     || 0);
+
+  const handleSubmit = () => {
+    let correct = 0;
+    module.quiz.forEach((q, i) => { if (answers[i] === q.a) correct++; });
+    const s = Math.round((correct / module.quiz.length) * 100);
+    setScore(s);
+    setSubmitted(true);
+    onComplete({ answers, submitted: true, score: s, correct, total: module.quiz.length });
+  };
+
+  const allAnswered = module.quiz.every((_, i) => answers[i] !== undefined);
+  const passed = score >= 80;
+
+  return (
+    <div style={{background:'#0d0d14',borderRadius:12,padding:'20px',marginTop:16}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+        <Icon name="award" size={16} color="#f59e0b" />
+        <span style={{fontWeight:700,fontSize:'0.85rem',color:'#f59e0b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Check on Learning</span>
+      </div>
+
+      {module.quiz.map((q, qi) => (
+        <div key={qi} style={{marginBottom:20}}>
+          <p style={{fontSize:'0.88rem',color:'#d4d0e8',fontWeight:600,marginBottom:10,lineHeight:1.5}}>{qi+1}. {q.q}</p>
+          {q.opts.map((opt, oi) => {
+            const selected  = answers[qi] === oi;
+            const isCorrect = oi === q.a;
+            let bg = '#18181f', border = '#2a2a38', txtColor = '#a09cb8';
+            if (submitted) {
+              if (isCorrect)               { bg='#052e16'; border='#16a34a'; txtColor='#4ade80'; }
+              else if (selected && !isCorrect) { bg='#2d0a0a'; border='#dc2626'; txtColor='#f87171'; }
+            } else if (selected) {
+              bg='#1e1040'; border='#7c3aed'; txtColor='#c4b5fd';
+            }
+            return (
+              <div key={oi}
+                onClick={() => { if (!submitted) setAnswers({...answers, [qi]: oi}); }}
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:8,border:`1px solid ${border}`,background:bg,marginBottom:6,cursor:submitted?'default':'pointer',transition:'all 0.15s'}}>
+                <div style={{width:18,height:18,borderRadius:'50%',border:`2px solid ${border}`,background:selected?border:'transparent',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  {selected && <div style={{width:8,height:8,borderRadius:'50%',background:'white'}} />}
+                </div>
+                <span style={{fontSize:'0.83rem',color:txtColor,lineHeight:1.4}}>{opt}</span>
+                {submitted && isCorrect && <span style={{marginLeft:'auto'}}><Icon name="check" size={14} color="#4ade80"/></span>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {!submitted ? (
+        <button onClick={handleSubmit} disabled={!allAnswered}
+          style={{background:allAnswered?'linear-gradient(135deg,#d97706,#f59e0b)':'#2a2a38',color:allAnswered?'white':'#6b6880',border:'none',borderRadius:8,padding:'11px 20px',fontWeight:700,fontSize:'0.85rem',cursor:allAnswered?'pointer':'not-allowed',width:'100%',marginTop:4,transition:'background 0.2s'}}>
+          Submit Answers
+        </button>
+      ) : (
+        <div style={{background:passed?'#052e16':'#2d0a0a',border:`1px solid ${passed?'#16a34a':'#dc2626'}`,borderRadius:10,padding:'14px 16px',textAlign:'center'}}>
+          <div style={{fontSize:'1.5rem',fontWeight:800,color:passed?'#4ade80':'#f87171'}}>{score}%</div>
+          <div style={{fontSize:'0.82rem',color:passed?'#86efac':'#fca5a5',marginTop:2}}>
+            {passed
+              ? `Great work! You passed with ${score}%.`
+              : `You scored ${score}%. Review the objectives and try again.`}
+          </div>
+          {!passed && (
+            <button onClick={()=>{setAnswers({});setSubmitted(false);setScore(0);}}
+              style={{marginTop:10,background:'transparent',border:'1px solid #dc2626',borderRadius:6,padding:'6px 14px',color:'#f87171',fontSize:'0.78rem',cursor:'pointer'}}>
+              Retry Quiz
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Module Card ───────────────────────────────────────────────────────────────
+function ModuleCard({ module, state, onUpdate, isLocked, saving }) {
+  const [open, setOpen] = useState(false);
+
+  const checkedObjs = state.objectives || {};
+  const objCount    = Object.values(checkedObjs).filter(Boolean).length;
+  const objTotal    = module.objectives.length;
+  const quizDone    = state.quiz?.submitted;
+  const quizPassed  = (state.quiz?.score ?? 0) >= 80;
+  const complete    = objCount === objTotal && quizDone && quizPassed;
+
+  const toggleObj = (i) => {
+    if (isLocked) return;
+    const updated = {...checkedObjs, [i]: !checkedObjs[i]};
+    onUpdate({...state, objectives: updated});
+  };
+
+  return (
+    <div style={{background:'#111118',border:`1px solid ${open ? module.sectionColor : '#2a2a38'}`,borderRadius:12,overflow:'hidden',transition:'border-color 0.2s',opacity:isLocked ? 0.45 : 1}}>
+      {/* Header row */}
+      <div
+        onClick={() => !isLocked && setOpen(!open)}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',cursor:isLocked?'not-allowed':'pointer',userSelect:'none'}}>
+        <div style={{width:36,height:36,borderRadius:10,background:complete?'linear-gradient(135deg,#16a34a,#22c55e)':`linear-gradient(135deg,${module.sectionColor},${module.sectionColor}99)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          {isLocked
+            ? <Icon name="lock"  size={16} color="white"/>
+            : complete
+              ? <Icon name="check" size={18} color="white"/>
+              : <span style={{color:'white',fontWeight:800,fontSize:'0.8rem'}}>{module.num}</span>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <span style={{fontWeight:700,fontSize:'0.92rem',color:'#e2e0ef'}}>{module.title}</span>
+            <span style={{background:'#1e1b4b',color:'#a5b4fc',fontSize:'0.65rem',padding:'2px 7px',borderRadius:4,fontWeight:600,whiteSpace:'nowrap'}}>{module.tag}</span>
+            {complete && <span style={{background:'#052e16',color:'#4ade80',fontSize:'0.65rem',padding:'2px 7px',borderRadius:4,fontWeight:600}}>COMPLETE</span>}
+            {saving  && <span style={{color:'#6b6880',fontSize:'0.65rem'}}>saving…</span>}
+          </div>
+          <div style={{marginTop:5,display:'flex',alignItems:'center',gap:8}}>
+            <div style={{flex:1,height:4,background:'#2a2a38',borderRadius:2,overflow:'hidden'}}>
+              <div style={{height:'100%',background:module.sectionColor,borderRadius:2,width:`${(objCount/objTotal)*100}%`,transition:'width 0.3s'}}/>
+            </div>
+            <span style={{fontSize:'0.72rem',color:'#6b6880',whiteSpace:'nowrap'}}>{objCount}/{objTotal}</span>
+            {quizDone && (
+              <span style={{fontSize:'0.72rem',color:quizPassed?'#4ade80':'#f87171'}}>
+                Quiz: {state.quiz.score}%
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{color:'#6b6880',transform:open?'rotate(180deg)':'rotate(0deg)',transition:'transform 0.2s',flexShrink:0}}>
+          <Icon name="chevronDown" size={18} />
+        </div>
+      </div>
+
+      {/* Expanded body */}
+      {open && (
+        <div style={{padding:'0 16px 16px',borderTop:'1px solid #1e1e28'}} className="fade-in">
+          {/* Objectives */}
+          <div style={{marginTop:14}}>
+            <p style={{fontSize:'0.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em',color:module.sectionColor,marginBottom:8}}>
+              Learning Objectives
+            </p>
+            {module.objectives.map((obj, i) => (
+              <div key={i} onClick={() => toggleObj(i)}
+                style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:8,cursor:'pointer',padding:'6px 8px',borderRadius:8,background:checkedObjs[i]?'#0d1a0d':'transparent',transition:'background 0.15s'}}>
+                <div style={{width:20,height:20,borderRadius:'50%',border:`2px solid ${checkedObjs[i]?'#22c55e':module.sectionColor}`,background:checkedObjs[i]?'#22c55e':'transparent',flexShrink:0,marginTop:1,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.2s'}}>
+                  {checkedObjs[i] && <Icon name="check" size={11} color="white"/>}
+                </div>
+                <span style={{fontSize:'0.83rem',color:checkedObjs[i]?'#6b7280':'#d1d5db',textDecoration:checkedObjs[i]?'line-through':'none',lineHeight:1.5}}>{obj}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Exercise */}
+          <div style={{background:'#0d0d14',borderLeft:'3px solid #f59e0b',borderRadius:'0 8px 8px 0',padding:'12px 14px',marginTop:14}}>
+            <p style={{fontSize:'0.7rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em',color:'#f59e0b',marginBottom:5}}>⚡ Practical Exercise</p>
+            <p style={{fontSize:'0.83rem',color:'#d1d5db',lineHeight:1.55}}>{module.exercise}</p>
+          </div>
+
+          {/* Quiz */}
+          <Quiz
+            module={module}
+            existing={state.quiz}
+            onComplete={(quizState) => onUpdate({...state, quiz: quizState})}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function Dashboard({ user, progress, onProgressUpdate, onLogout }) {
+  // Derive stats
+  const totalObjs    = allModules.reduce((s, m) => s + m.objectives.length, 0);
+  const doneObjs     = allModules.reduce((s, m) => s + Object.values(progress[m.id]?.objectives || {}).filter(Boolean).length, 0);
+  const quizzesPassed  = allModules.filter(m => (progress[m.id]?.quiz?.score ?? 0) >= 80).length;
+  const completedMods  = allModules.filter(m => {
+    const st = progress[m.id] || {};
+    return Object.values(st.objectives||{}).filter(Boolean).length === m.objectives.length
+      && (st.quiz?.score ?? 0) >= 80;
+  }).length;
+  const overallPct = Math.round(
+    ((doneObjs / totalObjs) * 0.6 + (quizzesPassed / allModules.length) * 0.4) * 100
+  );
+
+  // Per-module save state (for "saving…" indicator)
+  const [savingMap, setSavingMap] = useState({});
+
+  const handleUpdate = useCallback(async (moduleId, newState) => {
+    // Optimistic update in parent immediately
+    onProgressUpdate(moduleId, newState);
+    // Write to Supabase
+    setSavingMap(prev => ({...prev, [moduleId]: true}));
+    try {
+      await upsertModuleProgress(user.id, moduleId, newState);
+    } catch (err) {
+      console.error('Failed to save progress:', err);
+      // Could surface a toast here in a future iteration
+    } finally {
+      setSavingMap(prev => ({...prev, [moduleId]: false}));
+    }
+  }, [user.id, onProgressUpdate]);
+
+  // Helper: is a module completed?
+  const isModComplete = (mod) => {
+    const st = progress[mod.id] || {};
+    return Object.values(st.objectives||{}).filter(Boolean).length === mod.objectives.length
+      && (st.quiz?.score ?? 0) >= 80;
+  };
+
+  return (
+    <div style={{maxWidth:760, margin:'0 auto', padding:'24px 16px'}}>
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:28}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:40,height:40,background:'linear-gradient(135deg,#7c3aed,#a855f7)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="zap" size={20} color="white" />
+          </div>
+          <div>
+            <h1 style={{fontSize:'1.1rem',fontWeight:800,color:'#e2e0ef',letterSpacing:'-0.3px'}}>From Zero to AI Agent Builder</h1>
+            <p style={{fontSize:'0.75rem',color:'#6b6880'}}>{user.email}</p>
+          </div>
+        </div>
+        <button onClick={onLogout}
+          style={{background:'#18181f',border:'1px solid #2a2a38',borderRadius:8,padding:'7px 12px',color:'#a09cb8',fontSize:'0.78rem',cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+          <Icon name="x" size={13}/> Sign out
+        </button>
+      </div>
+
+      {/* Stats row */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:24}}>
+        {[
+          {label:'Overall Progress',  val:`${overallPct}%`,                  color:'#a78bfa'},
+          {label:'Objectives Done',   val:`${doneObjs}/${totalObjs}`,        color:'#34d399'},
+          {label:'Quizzes Passed',    val:`${quizzesPassed}/${allModules.length}`, color:'#f59e0b'},
+          {label:'Modules Complete',  val:`${completedMods}/${allModules.length}`, color:'#60a5fa'},
+        ].map(s => (
+          <div key={s.label} style={{background:'#111118',border:'1px solid #2a2a38',borderRadius:10,padding:'12px 14px',textAlign:'center'}}>
+            <div style={{fontSize:'1.3rem',fontWeight:800,color:s.color}}>{s.val}</div>
+            <div style={{fontSize:'0.68rem',color:'#6b6880',marginTop:3,lineHeight:1.3}}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overall progress bar */}
+      <div style={{marginBottom:28}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+          <span style={{fontSize:'0.75rem',color:'#a09cb8',fontWeight:600}}>Course Progress</span>
+          <span style={{fontSize:'0.75rem',color:'#a09cb8'}}>{overallPct}%</span>
+        </div>
+        <div style={{height:8,background:'#1e1e28',borderRadius:4,overflow:'hidden'}}>
+          <div style={{height:'100%',background:'linear-gradient(90deg,#7c3aed,#a855f7,#0891b2)',borderRadius:4,width:`${overallPct}%`,transition:'width 0.5s ease'}}/>
+        </div>
+      </div>
+
+      {/* Sections */}
+      {sections.map((section, si) => {
+        // Previous section is fully complete?
+        const prevSectionComplete = si === 0 || sections[si-1].modules.every(isModComplete);
+
+        return (
+          <div key={section.id} style={{marginBottom:28}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <div style={{height:3,width:24,background:section.color,borderRadius:2}}/>
+              <h2 style={{fontSize:'0.85rem',fontWeight:700,color:section.color,textTransform:'uppercase',letterSpacing:'0.06em'}}>{section.title}</h2>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {section.modules.map((mod, mi) => {
+                // A module is locked unless every predecessor is done.
+                // First module of first section: always unlocked.
+                // First module of subsequent sections: locked until prev section done.
+                // Any non-first module: locked until the one before it is done.
+                let isLocked = false;
+                if (si === 0 && mi === 0) {
+                  isLocked = false;
+                } else if (mi === 0) {
+                  isLocked = !prevSectionComplete;
+                } else {
+                  isLocked = !isModComplete(section.modules[mi - 1]);
+                }
+
+                return (
+                  <ModuleCard
+                    key={mod.id}
+                    module={mod}
+                    state={progress[mod.id] || {}}
+                    isLocked={isLocked}
+                    saving={!!savingMap[mod.id]}
+                    onUpdate={(newState) => handleUpdate(mod.id, newState)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Completion banner */}
+      {completedMods === allModules.length && (
+        <div style={{background:'linear-gradient(135deg,#1a1030,#0f1a20)',border:'1px solid #7c3aed',borderRadius:16,padding:28,textAlign:'center',marginTop:8}} className="fade-in">
+          <Icon name="award" size={40} color="#f59e0b" />
+          <h2 style={{fontSize:'1.3rem',fontWeight:800,color:'#e2e0ef',margin:'12px 0 8px'}}>Course Complete!</h2>
+          <p style={{color:'#a09cb8',fontSize:'0.88rem'}}>You've gone from zero to AI agent builder. Time to put these skills to work.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Loading Screen ────────────────────────────────────────────────────────────
+function LoadingScreen({ message = 'Loading…' }) {
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#09090f',gap:16}}>
+      <Icon name="loader" size={32} color="#7c3aed" />
+      <p style={{color:'#6b6880',fontSize:'0.85rem'}}>{message}</p>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [authState, setAuthState] = useState('loading'); // 'loading' | 'unauthenticated' | 'authenticated'
+  const [user,      setUser]      = useState(null);
+  const [progress,  setProgress]  = useState({});
+  const [loadingMsg, setLoadingMsg] = useState('Checking session…');
+
+  // Bootstrap: check existing session, then listen for auth changes
+  useEffect(() => {
+    let mounted = true;
+
+    const bootstrap = async () => {
+      // getSession() reads from local storage / cookie set by Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+
+      if (session?.user) {
+        setUser(session.user);
+        setLoadingMsg('Loading your progress…');
+        try {
+          const prog = await fetchProgress(session.user.id);
+          if (mounted) setProgress(prog);
+        } catch (e) {
+          console.error('Could not load progress:', e);
+        }
+        if (mounted) setAuthState('authenticated');
+      } else {
+        if (mounted) setAuthState('unauthenticated');
+      }
+    };
+
+    bootstrap();
+
+    // onAuthStateChange fires on magic-link callback, sign-out, token refresh, etc.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user);
+        setLoadingMsg('Loading your progress…');
+        setAuthState('loading');
+        try {
+          const prog = await fetchProgress(session.user.id);
+          if (mounted) setProgress(prog);
+        } catch (e) {
+          console.error('Could not load progress:', e);
+        }
+        if (mounted) setAuthState('authenticated');
+      }
+
+      if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setUser(null);
+          setProgress({});
+          setAuthState('unauthenticated');
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleProgressUpdate = useCallback((moduleId, newState) => {
+    setProgress(prev => ({...prev, [moduleId]: newState}));
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // onAuthStateChange will handle the state update
+  };
+
+  if (authState === 'loading') return <LoadingScreen message={loadingMsg} />;
+  if (authState === 'unauthenticated') return <LoginScreen />;
+
+  return (
+    <Dashboard
+      user={user}
+      progress={progress}
+      onProgressUpdate={handleProgressUpdate}
+      onLogout={handleLogout}
+    />
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
